@@ -1,0 +1,5 @@
+# Không upload thư mục node_modules
+node_modules/
+
+# Không upload file môi trường
+.env
