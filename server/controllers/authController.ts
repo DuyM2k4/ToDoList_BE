@@ -123,4 +123,44 @@ export const login = async (req: Request, res: Response) => {
     logger.error('Lỗi đăng nhập: ' + error.message);
     return res.status(500).json({ success: false, message: 'Lỗi máy chủ.' });
   }
+};
+
+// Đổi mật khẩu người dùng
+export const changePassword = async (req: Request, res: Response) => {
+  try {
+    const { userId, newPassword, confirmPassword } = req.body;
+    // Kiểm tra các trường bắt buộc
+    if (!userId || !newPassword || !confirmPassword) {
+      logger.warn('Đổi mật khẩu thất bại: Thiếu trường bắt buộc');
+      return res.status(400).json({ success: false, message: 'Vui lòng nhập đầy đủ thông tin.' });
+    }
+    // Kiểm tra mật khẩu hợp lệ
+    if (newPassword.length < 6 || newPassword.length > 255) {
+      logger.warn('Đổi mật khẩu thất bại: Mật khẩu không hợp lệ');
+      return res.status(400).json({ success: false, message: 'Mật khẩu phải từ 6 đến 255 ký tự.' });
+    }
+    if (newPassword.includes(' ')) {
+      logger.warn('Đổi mật khẩu thất bại: Mật khẩu chứa dấu cách');
+      return res.status(400).json({ success: false, message: 'Mật khẩu không được chứa dấu cách.' });
+    }
+    if (newPassword !== confirmPassword) {
+      logger.warn('Đổi mật khẩu thất bại: Mật khẩu xác nhận không khớp');
+      return res.status(400).json({ success: false, message: 'Mật khẩu xác nhận không khớp.' });
+    }
+    // Tìm user theo userId
+    const user = await User.findById(userId);
+    if (!user) {
+      logger.warn('Đổi mật khẩu thất bại: Không tìm thấy user');
+      return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng.' });
+    }
+    // Hash mật khẩu mới
+    const hashedPassword = await bcrypt.hash(newPassword, 10);
+    user.password = hashedPassword;
+    await user.save();
+    logger.info(`Đổi mật khẩu thành công cho user: ${userId}`);
+    return res.status(200).json({ success: true, message: 'Đổi mật khẩu thành công.' });
+  } catch (error: any) {
+    logger.error('Lỗi đổi mật khẩu: ' + error.message);
+    return res.status(500).json({ success: false, message: 'Lỗi máy chủ.' });
+  }
 }; 

@@ -1,5 +1,6 @@
 import { Router } from 'express';
-import { signup, login } from '../controllers/authController';
+import { signup, login, changePassword } from '../controllers/authController';
+import verifyToken from '../middleware/verifyToken';
 
 const router = Router();
 
@@ -7,5 +8,7 @@ const router = Router();
 router.post('/signup', signup);
 // Route for user login
 router.post('/login', login);
+// Route đổi mật khẩu
+router.post('/change-password', verifyToken, changePassword);
 
 export default router; 
