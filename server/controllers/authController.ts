@@ -107,7 +107,7 @@ export const login = async (req: Request, res: Response) => {
     }
     // Sinh token
     const token = jwt.sign(
-      { userId: user._id, email: user.email },
+      { userId: user._id},
       process.env.JWT_SECRET || 'secret',
       { expiresIn: '7d' }
     );
@@ -128,7 +128,8 @@ export const login = async (req: Request, res: Response) => {
 // Đổi mật khẩu người dùng
 export const changePassword = async (req: Request, res: Response) => {
   try {
-    const { userId, newPassword, confirmPassword } = req.body;
+    const userId = req.userId; // Lấy userId từ middleware verifyToken
+    const { newPassword, confirmPassword } = req.body;
     // Kiểm tra các trường bắt buộc
     if (!userId || !newPassword || !confirmPassword) {
       logger.warn('Đổi mật khẩu thất bại: Thiếu trường bắt buộc');
