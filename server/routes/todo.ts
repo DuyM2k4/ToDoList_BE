@@ -7,6 +7,6 @@ const router = Router();
 
 // Route to get all todos for the authenticated user
 router.get("/todos", verifyToken, getTodos);
-router.post("/search", searchTodos);
+router.post("/search", verifyToken, searchTodos);
 
 export default router;
