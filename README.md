@@ -53,7 +53,7 @@ PORT=3000
 ### Bước 2: Đăng ký tài khoản và lấy Authtoken
 - Truy cập: https://dashboard.ngrok.com/get-started/setup
 - Đăng ký/Đăng nhập → chọn mục Your Authtoken bên trái → bạn sẽ thấy Authtoken xuất hiện ở đầu trang.
-- Chạy file vừa giải nén ở bước 1.
+- Khởi động file ngrok.exe vừa giải nén ở bước 1.
 - Chạy lệnh sau trong cửa sổ vừa mở:
   ```bash
   ngrok config add-authtoken YOUR_AUTHTOKEN
