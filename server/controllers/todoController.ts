@@ -79,14 +79,18 @@ export const updateTodo = async (req: Request, res: Response) => {
         }
 
         if (isCompleted !== undefined) {
-            if (typeof isCompleted !== "boolean") {
+            console.log("ID cần tìm:", isCompleted);
+
+            if (isCompleted === 'true' || isCompleted === 'false') {
+                updateData.isCompleted = isCompleted;
+            } 
+            else {
                 return res.status(400).json({
                     success: false,
                     message: "Completed truyền không hợp lệ"
                 });
-                
-            }
-            updateData.isCompleted = isCompleted;
+            };
+            
         }
 
         if (dueDate !== undefined) {
