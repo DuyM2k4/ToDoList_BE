@@ -34,7 +34,8 @@ export const createTodo = async (req: Request, res: Response) => {
             return res.status(401).json({ success: false, message: "Không có quyền truy cập" });
         }
 
-        const { title, description, dueDate } = req.body;
+        const { title, description } = req.body;
+        let { dueDate } = req.body;
 
         if (!title) {
             return res.status(400).json({ success: false, message: "Tiêu đề là bắt buộc" });
@@ -46,6 +47,10 @@ export const createTodo = async (req: Request, res: Response) => {
 
         if (description && description.length > 255) {
             return res.status(400).json({ success: false, message: "Mô tả không được vượt quá 255 ký tự" });
+        }
+
+        if (dueDate === undefined || dueDate === null) {
+            dueDate = "";
         }
 
         const newTodo = new Todo({
@@ -64,4 +69,3 @@ export const createTodo = async (req: Request, res: Response) => {
         return res.status(500).json({ success: false, message: "Lỗi máy chủ." });
     }
 };
-
