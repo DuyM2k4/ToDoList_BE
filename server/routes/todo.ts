@@ -1,6 +1,6 @@
 import { Router } from "express";
 import verifyToken from "../middleware/verifyToken";
-import { getTodos } from "../controllers/todoController";
+import { deleteTodo, getTodos } from "../controllers/todoController";
 import { searchTodos } from "../controllers/searchController";
 
 const router = Router();
@@ -8,5 +8,6 @@ const router = Router();
 // Route to get all todos for the authenticated user
 router.get("/todos", verifyToken, getTodos);
 router.post("/search", verifyToken, searchTodos);
+router.delete("/todos/:id", verifyToken, deleteTodo);
 
 export default router;
