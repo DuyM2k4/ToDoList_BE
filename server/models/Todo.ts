@@ -9,6 +9,8 @@ export interface ITodo extends Document {
   createdAt: Date;              // Thời điểm tạo
   updatedAt: Date;              // Thời điểm cập nhật cuối
   dueDate: Date;                // Hạn hoàn thành
+  // TODO 
+  // updateBy: mongoose.Types.ObjectId;  // Tham chiếu đến user cuối cùng chỉnh sửa công việc
 }
 
 // Định nghĩa schema cho Todo
@@ -18,6 +20,8 @@ const todoSchema = new Schema<ITodo>({
   description: { type: String, default: '' },                         // Mô tả
   isCompleted: { type: Boolean, default: false },                     // Trạng thái hoàn thành
   dueDate: { type: Date },                                            // Hạn hoàn thành
+  // TODO 
+  // updateBy: { type: Schema.Types.ObjectId, ref: 'User', required: true }, // Tham chiếu user
 }, { timestamps: true });                                             // Tự động quản lý createdAt/updatedAt
 
 // Model Todo
