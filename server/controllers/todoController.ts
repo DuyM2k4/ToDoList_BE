@@ -1,7 +1,6 @@
 import { Request, Response } from "express";
 import Todo from "../models/Todo";
 import { logger } from "../utils/logger";
-import { toTimestamp } from "../utils/dateHelper";
 
 // Controller lấy tất cả todo của người dùng đã xác thực
 export const getTodos = async (req: Request, res: Response) => {
@@ -19,7 +18,6 @@ export const getTodos = async (req: Request, res: Response) => {
         const todos = await Todo.find({ user: userId }).sort({ createdAt: -1 });
         logger.info(`Đã lấy ${todos.length} công việc cho user: ${userId}`);
         
-        // Không cần chuyển đổi timestamp nữa vì đã lưu sẵn
         return res.status(200).json({ success: true, todos });
     } catch (error: any) {
         logger.error("Lỗi lấy danh sách công việc: " + error.message);
@@ -53,28 +51,23 @@ export const createTodo = async (req: Request, res: Response) => {
             return res.status(400).json({ success: false, message: "Mô tả không được vượt quá 255 ký tự" });
         }
 
-        // Xử lý dueDate và chuyển thành timestamp ngay từ đầu
-        let dueDateTimestamp = null;
+        // Xử lý dueDate
+        const currentTimestamp = Date.now();
+
         if (dueDate && dueDate !== null && dueDate !== "") {
-            if (isNaN(Date.parse(dueDate))) {
-                return res.status(400).json({ success: false, message: "Ngày đến hạn (dueDate) không hợp lệ" });
-            }
-            const now = new Date();
-            now.setHours(0,0,0,0);
-            const inputDueDate = new Date(dueDate);
-            inputDueDate.setHours(0,0,0,0);
-            if (inputDueDate < now) {
+            if (dueDate < currentTimestamp) {
                 return res.status(400).json({ success: false, message: "Ngày đến hạn (dueDate) phải là hôm nay hoặc sau hôm nay" });
             }
-            dueDateTimestamp = toTimestamp(inputDueDate);
         }
 
-        const currentTimestamp = toTimestamp(new Date());
+        if (dueDate === undefined || dueDate === null) {
+            dueDate = "";
+        }
         
         const newTodo = new Todo({
             title,
             description,
-            dueDate: dueDateTimestamp,
+            dueDate: dueDate,
             user: userId,
             isCompleted: false,
             createdAt: currentTimestamp,
@@ -156,29 +149,16 @@ export const updateTodo = async (req: Request, res: Response) => {
             }
         }
 
+        const currentTimestamp = Date.now();
         if (dueDate !== null && dueDate !== undefined) {
             if (dueDate === "") {
                 // Nếu gửi chuỗi rỗng thì set null
                 updateData.dueDate = null;
             } else {
-                if (isNaN(Date.parse(dueDate))) {
-                    return res.status(400).json({
-                        success: false,
-                        message: "Ngày đến hạn (dueDate) không hợp lệ"
-                    });
+                if (dueDate < currentTimestamp) {
+                    return res.status(400).json({ success: false, message: "Ngày đến hạn (dueDate) phải là hôm nay hoặc sau hôm nay" });
                 }
-                const now = new Date();
-                now.setHours(0,0,0,0);
-                const inputDueDate = new Date(dueDate);
-                inputDueDate.setHours(0,0,0,0);
-                if (inputDueDate < now) {
-                    return res.status(400).json({
-                        success: false,
-                        message: "Ngày đến hạn (dueDate) phải là hôm nay hoặc sau hôm nay"
-                    });
-                }
-                // Lưu dưới dạng timestamp
-                updateData.dueDate = toTimestamp(inputDueDate);
+                updateData.dueDate = dueDate;
             }
         }
 
@@ -187,8 +167,7 @@ export const updateTodo = async (req: Request, res: Response) => {
             return res.status(400).json({ message: "Không có dữ liệu để cập nhật" });
         }
 
-        // Cập nhật updatedAt timestamp
-        updateData.updatedAt = toTimestamp(new Date());
+        updateData.updatedAt = currentTimestamp;
 
         // Kiểm tra đúng chủ sở hữu hoặc admin (quyền cập nhật)
         //TODO
