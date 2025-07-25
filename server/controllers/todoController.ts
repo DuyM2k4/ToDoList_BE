@@ -1,6 +1,7 @@
 import { Request, Response } from "express";
 import Todo from "../models/Todo";
 import { logger } from "../utils/logger";
+import { toTimestamp } from "../utils/dateHelper";
 
 // Controller lấy tất cả todo của người dùng đã xác thực
 export const getTodos = async (req: Request, res: Response) => {
@@ -13,9 +14,12 @@ export const getTodos = async (req: Request, res: Response) => {
                 .status(401)
                 .json({ success: false, message: "Không có quyền truy cập" });
         }
+        
         // Tìm tất cả todo của user, sắp xếp theo ngày tạo mới nhất
         const todos = await Todo.find({ user: userId }).sort({ createdAt: -1 });
         logger.info(`Đã lấy ${todos.length} công việc cho user: ${userId}`);
+        
+        // Không cần chuyển đổi timestamp nữa vì đã lưu sẵn
         return res.status(200).json({ success: true, todos });
     } catch (error: any) {
         logger.error("Lỗi lấy danh sách công việc: " + error.message);
@@ -49,24 +53,172 @@ export const createTodo = async (req: Request, res: Response) => {
             return res.status(400).json({ success: false, message: "Mô tả không được vượt quá 255 ký tự" });
         }
 
-        if (dueDate === undefined || dueDate === null) {
-            dueDate = "";
+        // Xử lý dueDate và chuyển thành timestamp ngay từ đầu
+        let dueDateTimestamp = null;
+        if (dueDate && dueDate !== null && dueDate !== "") {
+            if (isNaN(Date.parse(dueDate))) {
+                return res.status(400).json({ success: false, message: "Ngày đến hạn (dueDate) không hợp lệ" });
+            }
+            const now = new Date();
+            now.setHours(0,0,0,0);
+            const inputDueDate = new Date(dueDate);
+            inputDueDate.setHours(0,0,0,0);
+            if (inputDueDate < now) {
+                return res.status(400).json({ success: false, message: "Ngày đến hạn (dueDate) phải là hôm nay hoặc sau hôm nay" });
+            }
+            dueDateTimestamp = toTimestamp(inputDueDate);
         }
 
+        const currentTimestamp = toTimestamp(new Date());
+        
         const newTodo = new Todo({
             title,
             description,
-            dueDate,
+            dueDate: dueDateTimestamp,
             user: userId,
             isCompleted: false,
+            createdAt: currentTimestamp,
+            updatedAt: currentTimestamp,
         });
 
         await newTodo.save();
         logger.info(`Thêm công việc mới cho user: ${userId}`);
-        return res.status(201).json({ success: true, todo: newTodo });
+        
+        // Trả về todo trực tiếp không cần chuyển đổi
+        return res.status(201).json({ success: true, todo: newTodo.toObject() });
     } catch (error: any) {
         logger.error("Lỗi thêm công việc: " + error.message);
         return res.status(500).json({ success: false, message: "Lỗi máy chủ." });
+    }
+};
+
+// Update todo 
+export const updateTodo = async (req: Request, res: Response) => {
+    try {
+        const userId = req.userId;
+        const {id} = req.params;
+        const { title, description, isCompleted, dueDate } = req.body;
+        const updateData: Record<string, any> = {};
+
+        if (!userId) {
+            logger.warn("Cập nhật công việc thất bại: Truy cập trái phép");
+            return res
+                .status(401)
+                .json({ success: false, message: "Không có quyền truy cập" });
+        }
+
+        if (!id) {
+            logger.warn("Cập nhật công việc thất bại: Truy cập trái phép");
+            return res
+                .status(401)
+                .json({ success: false, message: "Không tồn tại" });
+        }
+
+        // Tìm todo muốn cập nhật
+        const todo = await Todo.findById(id);
+
+        if (!todo) {
+            logger.warn("Cập nhật công việc thất bại: Truy cập trái phép");
+            return res
+                .status(401)
+                .json({ success: false, message: "Không tồn tại" });
+        }
+        
+        // Xét điều kiện từng đầu vào
+        if (title !== null && title !== undefined) {
+            if (title.length >= 255) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Tiêu đề (title) vượt quá 255 ký tự"
+                });
+            }
+            updateData.title = title;
+        }
+
+        if (description !== null && description !== undefined) {
+            if (description.length >= 255) {
+                return res.status(400).json({
+                    success: false,
+                    message: "Mô tả (description) vượt quá 255 ký tự"
+                });
+            }
+            updateData.description = description;
+        }
+
+        if (isCompleted !== null && isCompleted !== undefined) {
+            if (isCompleted === 'true' || isCompleted === 'false' || typeof isCompleted === 'boolean') {
+                updateData.isCompleted = isCompleted === 'true' || isCompleted === true;
+            } else {
+                return res.status(400).json({
+                    success: false,
+                    message: "Completed truyền không hợp lệ"
+                });
+            }
+        }
+
+        if (dueDate !== null && dueDate !== undefined) {
+            if (dueDate === "") {
+                // Nếu gửi chuỗi rỗng thì set null
+                updateData.dueDate = null;
+            } else {
+                if (isNaN(Date.parse(dueDate))) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Ngày đến hạn (dueDate) không hợp lệ"
+                    });
+                }
+                const now = new Date();
+                now.setHours(0,0,0,0);
+                const inputDueDate = new Date(dueDate);
+                inputDueDate.setHours(0,0,0,0);
+                if (inputDueDate < now) {
+                    return res.status(400).json({
+                        success: false,
+                        message: "Ngày đến hạn (dueDate) phải là hôm nay hoặc sau hôm nay"
+                    });
+                }
+                // Lưu dưới dạng timestamp
+                updateData.dueDate = toTimestamp(inputDueDate);
+            }
+        }
+
+        // Kiểm tra có dữ liệu để cập nhật không
+        if (Object.keys(updateData).length === 0) {
+            return res.status(400).json({ message: "Không có dữ liệu để cập nhật" });
+        }
+
+        // Cập nhật updatedAt timestamp
+        updateData.updatedAt = toTimestamp(new Date());
+
+        // Kiểm tra đúng chủ sở hữu hoặc admin (quyền cập nhật)
+        //TODO
+        // if (userId === todo.user || userId === "ADMIN") {
+            // ...
+            
+            // Cập nhật user cuối cùng chỉnh sửa công việc
+            // TODO
+            // updateData.updateBy = updateByUser;
+        // };
+
+        const updatedTodo = await Todo.findByIdAndUpdate(id, updateData, {
+            new: true,
+            runValidators: true,
+        });
+
+        logger.info(`Cập nhật công việc thành công, user ${userId}: ${id}`);
+        
+        // Trả về todo trực tiếp không cần chuyển đổi timestamp
+        return res.status(200).json({
+            success: true,
+            message: "Cập nhật công việc thành công",
+            data: updatedTodo?.toObject(),
+        });
+
+    } catch (error: any) {
+        logger.error("Lỗi cập nhật danh sách công việc: " + error.message);
+        return res
+            .status(500)
+            .json({ success: false, message: "Lỗi máy chủ." });
     }
 };
 
