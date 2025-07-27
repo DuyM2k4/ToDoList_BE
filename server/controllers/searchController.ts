@@ -5,15 +5,15 @@ import { logger } from "../utils/logger";
 
 export const searchTodos = async (req: Request, res: Response) => {
     try {
-        // Xác thực người dùng
-        const userId = new Types.ObjectId(req.userId);
-        if (!userId) {
+        // Checking user based on token
+        if (!req.userId) {
             logger.warn("Lấy danh sách công việc thất bại: Truy cập trái phép");
             return res.status(401).json({
                 success: false,
                 message: "Không có quyền truy cập",
             });
         } else {
+            const userId = new Types.ObjectId(req.userId);
             const titleRequest: string = req.body.title;
             const isCompleted: string = req.body.isCompleted;
 
@@ -21,12 +21,12 @@ export const searchTodos = async (req: Request, res: Response) => {
                 user: userId,
             };
 
-            // Nội dung todos cần tìm kiếm
-            if (titleRequest.trim() !== "") {
+            // Content to search
+            if (titleRequest && titleRequest.trim() !== "") {
                 query["title"] = { $regex: titleRequest.trim(), $options: "i" };
             }
 
-            // Trạng thái của todos cần tìm
+            // Check status of todo to search
             if (isCompleted) {
                 if (isCompleted == "true") {
                     query["isCompleted"] = true;
@@ -38,15 +38,18 @@ export const searchTodos = async (req: Request, res: Response) => {
             const todos: ITodo[] = await Todo.find(query);
 
             logger.info(
-                `Đã tìm thấy ${todos.length} công việc cho user: ${userId}`
+                `Đã tìm thấy ${todos.length} kết quả cho tìm kiếm của user: ${userId}`
             );
 
-            // Nếu không có kết quả nào phù hợp thì trả về status 204
+            //  Return status 204 if the search return nothing
             if (todos.length == 0) {
                 return res.sendStatus(204);
+            } else {
+                return res.status(200).json({
+                    success: true,
+                    todos,
+                });
             }
-
-            return res.status(200).json({ success: true, todos });
         }
     } catch (error: any) {
         logger.error(error);
