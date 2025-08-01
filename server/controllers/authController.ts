@@ -3,6 +3,7 @@ import User from '../models/User';
 import bcrypt from 'bcrypt';
 import jwt, { Secret } from 'jsonwebtoken';
 import { logger } from '../utils/logger';
+import { validateAuthFields } from '../utils/authUtils';
 
 // Đăng ký người dùng
 export const signup = async (req: Request, res: Response) => {
@@ -13,47 +14,22 @@ export const signup = async (req: Request, res: Response) => {
       logger.warn('Đăng ký thất bại: Thiếu trường bắt buộc');
       return res.status(400).json({ success: false, message: 'Vui lòng nhập đầy đủ thông tin.' });
     }
-    // Kiểm tra name hợp lệ
-    const nameRegex = /^[a-zA-Z0-9 ]+$/;
-    if (!nameRegex.test(name)) {
-      logger.warn('Đăng ký thất bại: Tên không hợp lệ');
-      return res.status(400).json({ success: false, message: 'Tên chỉ được chứa ký tự chữ, số và dấu cách.' });
-    }
-    if (name.length > 255) {
-      logger.warn('Đăng ký thất bại: Tên vượt quá 255 ký tự');
-      return res.status(400).json({ success: false, message: 'Tên tối đa 255 ký tự.' });
-    }
-    // Kiểm tra email hợp lệ
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
-    if (!emailRegex.test(email)) {
-      logger.warn('Đăng ký thất bại: Email không hợp lệ');
-      return res.status(400).json({ success: false, message: 'Email phải là Gmail hợp lệ, không dấu cách.' });
-    }
-    if (email.length > 255) {
-      logger.warn('Đăng ký thất bại: Email vượt quá 255 ký tự');
-      return res.status(400).json({ success: false, message: 'Email tối đa 255 ký tự.' });
-    }
-    // Kiểm tra password hợp lệ
-    if (password.length < 6 || password.length > 255) {
-      logger.warn('Đăng ký thất bại: Mật khẩu không hợp lệ');
-      return res.status(400).json({ success: false, message: 'Mật khẩu phải từ 6 đến 255 ký tự.' });
-    }
-    if (password.includes(' ')) {
-      logger.warn('Đăng ký thất bại: Mật khẩu chứa dấu cách');
-      return res.status(400).json({ success: false, message: 'Mật khẩu không được chứa dấu cách.' });
-    }
-    if (password !== confirmPassword) {
-      logger.warn('Đăng ký thất bại: Mật khẩu xác nhận không khớp');
-      return res.status(400).json({ success: false, message: 'Mật khẩu xác nhận không khớp.' });
+
+    // Validate các trường
+    const validateResult = await validateAuthFields({ name, email, password, confirmPassword });
+    if (!validateResult.success) {
+      logger.warn('Đăng ký thất bại: ' + validateResult.message);
+      return res.status(400).json({ success: false, message: validateResult.message });
     }
     // Kiểm tra email đã tồn tại
-    const existingUser = await User.findOne({ email });
-    if (existingUser) {
+    else if (validateResult.user) {
       logger.warn('Đăng ký thất bại: Email đã tồn tại');
       return res.status(409).json({ success: false, message: 'Email đã tồn tại.' });
     }
+
     // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
+
     // Tạo user mới
     const user = new User({ name, email, password: hashedPassword });
     await user.save();
@@ -74,37 +50,21 @@ export const login = async (req: Request, res: Response) => {
       logger.warn('Đăng nhập thất bại: Thiếu email hoặc mật khẩu');
       return res.status(400).json({ success: false, message: 'Vui lòng nhập email và mật khẩu.' });
     }
-    // Kiểm tra email hợp lệ
-    const emailRegex = /^[a-zA-Z0-9._%+-]+@gmail\.com$/;
-    if (!emailRegex.test(email)) {
-      logger.warn('Đăng nhập thất bại: Email không hợp lệ');
-      return res.status(400).json({ success: false, message: 'Email phải là Gmail hợp lệ, không dấu cách.' });
+
+    // Validate các trường
+    const validateResult = await validateAuthFields({ email, password });
+    if (!validateResult.success) {
+      logger.warn('Đăng nhập thất bại: ' + validateResult.message);
+      return res.status(400).json({ success: false, message: validateResult.message });
     }
-    if (email.length > 255) {
-      logger.warn('Đăng nhập thất bại: Email vượt quá 255 ký tự');
-      return res.status(400).json({ success: false, message: 'Email tối đa 255 ký tự.' });
-    }
-    // Kiểm tra password hợp lệ
-    if (password.length < 6 || password.length > 255) {
-      logger.warn('Đăng nhập thất bại: Mật khẩu không hợp lệ');
-      return res.status(400).json({ success: false, message: 'Mật khẩu phải từ 6 đến 255 ký tự.' });
-    }
-    if (password.includes(' ')) {
-      logger.warn('Đăng nhập thất bại: Mật khẩu chứa dấu cách');
-      return res.status(400).json({ success: false, message: 'Mật khẩu không được chứa dấu cách.' });
-    }
-    // Tìm user theo email
-    const user = await User.findOne({ email });
-    if (!user) {
-      logger.warn('Đăng nhập thất bại: Không tìm thấy email');
+    else if (!validateResult.user || !validateResult.match) {
+      logger.warn('Đăng nhập thất bại: Email hoặc mật khẩu không đúng');
       return res.status(401).json({ success: false, message: 'Email hoặc mật khẩu không đúng.' });
     }
-    // So sánh mật khẩu
-    const isMatch = await bcrypt.compare(password, user.password);
-    if (!isMatch) {
-      logger.warn('Đăng nhập thất bại: Sai mật khẩu');
-      return res.status(401).json({ success: false, message: 'Email hoặc mật khẩu không đúng.' });
-    }
+
+    // Gán user
+    const user = validateResult.user;
+
     // Sinh token
     const token = jwt.sign(
       { userId: user._id},
@@ -135,25 +95,20 @@ export const changePassword = async (req: Request, res: Response) => {
       logger.warn('Đổi mật khẩu thất bại: Thiếu trường bắt buộc');
       return res.status(400).json({ success: false, message: 'Vui lòng nhập đầy đủ thông tin.' });
     }
-    // Kiểm tra mật khẩu hợp lệ
-    if (newPassword.length < 6 || newPassword.length > 255) {
-      logger.warn('Đổi mật khẩu thất bại: Mật khẩu không hợp lệ');
-      return res.status(400).json({ success: false, message: 'Mật khẩu phải từ 6 đến 255 ký tự.' });
-    }
-    if (newPassword.includes(' ')) {
-      logger.warn('Đổi mật khẩu thất bại: Mật khẩu chứa dấu cách');
-      return res.status(400).json({ success: false, message: 'Mật khẩu không được chứa dấu cách.' });
-    }
-    if (newPassword !== confirmPassword) {
-      logger.warn('Đổi mật khẩu thất bại: Mật khẩu xác nhận không khớp');
-      return res.status(400).json({ success: false, message: 'Mật khẩu xác nhận không khớp.' });
-    }
-    // Tìm user theo userId
-    const user = await User.findById(userId);
-    if (!user) {
+    // Validate mật khẩu mới
+    const validateResult = await validateAuthFields({ userId, password: newPassword, confirmPassword});
+    if (!validateResult.success) {
+      logger.warn('Đổi mật khẩu thất bại: ' + validateResult.message);
+      return res.status(400).json({ success: false, message: validateResult.message });
+    } 
+    else if (!validateResult.user){
       logger.warn('Đổi mật khẩu thất bại: Không tìm thấy user');
       return res.status(404).json({ success: false, message: 'Không tìm thấy người dùng.' });
     }
+    
+    // Gán user
+    const user = validateResult.user;
+
     // Hash mật khẩu mới
     const hashedPassword = await bcrypt.hash(newPassword, 10);
     user.password = hashedPassword;
