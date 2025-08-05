@@ -1,5 +1,6 @@
 import { config } from "dotenv";
 import winston from "winston";
+import DailyRotateFile from "winston-daily-rotate-file";
 
 const LogLevels = {
   error: 0,
@@ -12,28 +13,48 @@ const LogLevels = {
 const ENV_LOG_LEVEL = 'debug'
 const LogLevel = ENV_LOG_LEVEL || "info"
 
+export const customLogFormat = winston.format.printf(
+      ({ timestamp, level, message, logMetadata, stack }) => {
+        return `${timestamp} ${level.toUpperCase()}: ${logMetadata || ''} ${message} ${stack || ""}`;
+      });
+
 const logger = winston.createLogger({
   levels: LogLevels,
   level: LogLevel,
   format: winston.format.combine(
-    winston.format.errors({stack: true}),
+    winston.format.errors({ stack: true }),
     winston.format.timestamp({
       format: "YYYY-MM-DD HH:mm:ss:SSS",
     }),
-    winston.format.printf(
-      ({timestamp, level, message, logMetadata, stack}) => {
-        return `${timestamp} ${level.toUpperCase()}: ${logMetadata || ''} ${message} ${stack || "" }`;
-      }
-    )
+    customLogFormat
   ),
   transports: [new winston.transports.Console()]
 })
 
 
+const fileRotateTransport = new DailyRotateFile({
+  filename: "server/log/application-%DATE%.log",
+  datePattern: "YYYY-MM-DD",
+  zippedArchive: true,
+  maxSize: "20m",
+  maxFiles: "14d",
+  format: winston.format.combine(
+    winston.format.errors({ stack: true }),
+    // winston.format.timestamp(),
+    // winston.format.json()
+    winston.format.timestamp({
+      format: "YYYY-MM-DD HH:mm:ss:SSS"
+    }),
+    customLogFormat
+  ),
+});
+
+logger.add(fileRotateTransport);
+
 export default logger;
 
 logger.info("haha")
-logger.error("hehe")
+logger.error(new Error("hehe"))
 logger.warn("kkk")
 logger.warn("Thiếu thông tin user", {
   userId: 123,
@@ -41,8 +62,8 @@ logger.warn("Thiếu thông tin user", {
 });
 logger.child({
   logMetadata1: `User: 123`
-}) 
-  .debug("is requesting task!", {user: 123, logMetadata: `User: 123`})
+})
+  .debug("is requesting task!", { user: 123, logMetadata: `User: 123` })
 
 
 

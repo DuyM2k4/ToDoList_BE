@@ -50,7 +50,7 @@ export const login = async (req: Request, res: Response) => {
 
     // Check required fields
     if (!email || !password) {
-      logger.warn('Đăng nhập thất bại: Thiếu email hoặc mật khẩu', {logMetadata: getLogMetadata(req)});
+      logger.warn('Đăng nhập thất bại: Thiếu email hoặc mật khẩu');
       return res.status(400).json({ success: false, message: 'Vui lòng nhập email và mật khẩu.' });
     }
 
@@ -75,7 +75,7 @@ export const login = async (req: Request, res: Response) => {
       process.env.JWT_SECRET || 'secret',
       { expiresIn: '7d' }
     );
-    logger.info(`Đăng nhập thành công cho email: ${email}`, {logMetadata: getLogMetadata(req)});
+    logger.info(`Đăng nhập thành công cho email: ${email}`);
     return res.status(200).json({
       success: true,
       name: user.name,
