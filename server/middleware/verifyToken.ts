@@ -1,6 +1,7 @@
 import { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload, TokenExpiredError, JsonWebTokenError } from "jsonwebtoken";
 import { logger } from "../utils/logger";
+import { ResponseInf, responseMessage } from "../utils/response";
 
 // Extend Request interface to include userId
 declare module "express-serve-static-core" {
@@ -19,20 +20,14 @@ const verifyToken = (req: Request, res: Response, next: NextFunction) => {
     const authHeader = req.header("Authorization");
     if (!authHeader) {
         logger.warn("Từ chối truy cập: Không có header Authorization");
-        return res.status(401).json({
-            success: false,
-            message: "Không tìm thấy header Authorization",
-        });
+        return ResponseInf.failed(res, 401, responseMessage.TOKEN.MISSING_AUTHORIZATION);
     }
 
     // Extract token from Authorization header
     const token = authHeader.split(" ")[1];
     if (!token) {
         logger.warn("Từ chối truy cập: Không có token");
-        return res.status(401).json({
-            success: false,
-            message: "Không tìm thấy access token",
-        });
+        return ResponseInf.failed(res, 401, responseMessage.TOKEN.TOKEN_NOT_FOUND);
     }
 
     try {
@@ -42,10 +37,7 @@ const verifyToken = (req: Request, res: Response, next: NextFunction) => {
         // Check if decoded token contains valid userId
         if (typeof decoded !== "object" || !decoded.userId) {
             logger.error("Token không chứa userId hợp lệ");
-            return res.status(403).json({
-                success: false,
-                message: "Token không hợp lệ (thiếu userId)",
-            });
+            return ResponseInf.failed(res, 403, responseMessage.TOKEN.MISSING_USERID);
         }
 
         // Assign userId to request
@@ -56,27 +48,18 @@ const verifyToken = (req: Request, res: Response, next: NextFunction) => {
         // Handle token expired error
         if (error instanceof TokenExpiredError) {
             logger.error("Token đã hết hạn: " + error.message);
-            return res.status(401).json({
-                success: false,
-                message: "Token đã hết hạn. Vui lòng đăng nhập lại.",
-            });
+            return ResponseInf.failed(res, 401, responseMessage.TOKEN.TOKEN_EXPIRED);
         }
 
         // Handle invalid token error
         if (error instanceof JsonWebTokenError) {
             logger.error("Token không hợp lệ: " + error.message);
-            return res.status(403).json({
-                success: false,
-                message: "Token không hợp lệ",
-            });
+            return ResponseInf.failed(res, 403, responseMessage.TOKEN.INVALID_TOKEN);
         }
 
         // Handle unknown errors
         logger.error("Lỗi không xác định khi xác thực token: " + (error as Error).message);
-        return res.status(500).json({
-            success: false,
-            message: "Đã xảy ra lỗi khi xác thực token",
-        });
+        return ResponseInf.failed(res, 401, "Đã xảy ra lỗi khi xác thực token");
     }
 };
 
