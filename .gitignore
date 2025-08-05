@@ -6,3 +6,5 @@ node_modules/
 
 # Không upload log/server.log
 server/log/server.log
+
+server/log

@@ -22,7 +22,7 @@ const logger = winston.createLogger({
     }),
     winston.format.printf(
       ({timestamp, level, message, logMetadata, stack}) => {
-        return `${timestamp} ${level}: ${logMetadata || ''} ${message} ${stack || "" }`;
+        return `${timestamp} ${level.toUpperCase()}: ${logMetadata || ''} ${message} ${stack || "" }`;
       }
     )
   ),
