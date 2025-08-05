@@ -7,6 +7,7 @@ import todoRoutes from "./routes/todo";
 import { MONGO_URI } from "./constants/db";
 // import ngrok from 'ngrok';
 import logger from "./utils/logger";
+import { errorLogger, requestLogger } from "./middleware/requestLogger";
 
 // Load biến môi trường từ file .env
 dotenv.config();
@@ -18,6 +19,7 @@ const PORT = process.env.PORT || 3000;
 app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
+app.use(requestLogger);
 
 // Cấu hình route
 app.use("/auth", authRoutes);
@@ -41,3 +43,9 @@ mongoose
     .catch((err) => {
         logger.error("Lỗi kết nối MongoDB: " + err);
     });
+
+app.get('/hello', (req, res) =git > {
+  res.send('Hello world!');
+});
+
+app.use(errorLogger);
