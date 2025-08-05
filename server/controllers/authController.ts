@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import User from '../models/User';
 import bcrypt from 'bcrypt';
 import jwt, { Secret } from 'jsonwebtoken';
-import { logger } from '../utils/logger';
+import logger from '../utils/logger';
 import { validateAuthFields } from '../utils/authUtils';
 
 // Register a new user

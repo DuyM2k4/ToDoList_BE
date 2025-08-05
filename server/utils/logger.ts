@@ -1,10 +1,48 @@
+import { config } from "dotenv";
+import winston from "winston";
+
+const LogLevels = {
+  error: 0,
+  warn: 1,
+  info: 2,
+  http: 3,
+  debug: 4
+};
+
+const ENV_LOG_LEVEL = 'debug'
+const LogLevel = ENV_LOG_LEVEL || "info"
+
+const logger = winston.createLogger({
+  levels: LogLevels,
+  level: LogLevel,
+  format: winston.format.combine(
+    winston.format.errors({stack: true}),
+    winston.format.timestamp({
+      format: "YYYY-MM-DD HH:mm:ss:SSS",
+    }),
+    winston.format.printf(
+      ({timestamp, level, message, logMetadata, stack}) => {
+        return `${timestamp} ${level}: ${logMetadata || ''} ${message} ${stack || "" }`;
+      }
+    )
+  ),
+  transports: [new winston.transports.Console()]
+})
 
 
+export default logger;
 
-
-
-
-
+logger.info("haha")
+logger.error("hehe")
+logger.warn("kkk")
+logger.warn("Thiếu thông tin user", {
+  userId: 123,
+  endpoint: "/api/login"
+});
+logger.child({
+  logMetadata1: `User: 123`
+}) 
+  .debug("is requesting task!", {user: 123, logMetadata: `User: 123`})
 
 
 

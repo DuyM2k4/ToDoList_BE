@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { Types } from "mongoose";
 import Todo, { ITodo } from "../models/Todo";
-import { logger } from "../utils/logger";
+import logger from '../utils/logger';
 
 export const searchTodos = async (req: Request, res: Response) => {
     try {

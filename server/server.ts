@@ -6,7 +6,7 @@ import authRoutes from "./routes/auth";
 import todoRoutes from "./routes/todo";
 import { MONGO_URI } from "./constants/db";
 // import ngrok from 'ngrok';
-import { logger } from "./utils/logger";
+import logger from "./utils/logger";
 
 // Load biến môi trường từ file .env
 dotenv.config();

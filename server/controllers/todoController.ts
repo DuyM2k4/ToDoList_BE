@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import Todo from "../models/Todo";
-import { logger } from "../utils/logger";
+import logger from '../utils/logger';
 
 // Controller lấy tất cả todo của người dùng đã xác thực
 export const getTodos = async (req: Request, res: Response) => {
@@ -16,12 +16,8 @@ export const getTodos = async (req: Request, res: Response) => {
         
         // Tìm tất cả todo của user, sắp xếp theo ngày tạo mới nhất
         const todos = await Todo.find({ user: userId }).sort({ createdAt: -1 });
-        // logger.info(`Đã lấy ${todos.length} công việc cho user: ${userId}`);
-        
+        logger.info(`Đã lấy ${todos.length} công việc cho user: ${userId}`); 
         return res.status(200).json({ success: true, todos });
-        // return logger.info2(res, 200, true,
-
-        // )
     } catch (error: any) {
         logger.error("Lỗi lấy danh sách công việc: " + error.message);
         return res
