@@ -2,16 +2,16 @@ import { Request, Response } from "express";
 import { Types } from "mongoose";
 import Todo, { ITodo } from "../models/Todo";
 import logger from '../utils/logger';
+import { ResponseInf, responseMessage } from "../utils/response";
+import { todo } from "node:test";
 
 export const searchTodos = async (req: Request, res: Response) => {
     try {
         // Checking user based on token
         if (!req.userId) {
             logger.warn("Lấy danh sách công việc thất bại: Truy cập trái phép");
-            return res.status(401).json({
-                success: false,
-                message: "Không có quyền truy cập",
-            });
+            return ResponseInf.failed(res, 401, responseMessage.AUTH.UNAUTHORIZED);
+
         } else {
             const userId = new Types.ObjectId(req.userId);
             const titleRequest: string = req.body.title;
@@ -45,17 +45,11 @@ export const searchTodos = async (req: Request, res: Response) => {
             if (todos.length == 0) {
                 return res.sendStatus(204);
             } else {
-                return res.status(200).json({
-                    success: true,
-                    todos,
-                });
+                return ResponseInf.success<ITodo[]>(res, 200, `Đã tìm thấy ${todos.length} kết quả`, todos)
             }
         }
     } catch (error: any) {
         logger.error(error);
-        res.status(500).json({
-            success: false,
-            message: "Internal server errol",
-        });
+        return ResponseInf.failed(res, 500, responseMessage.COMMON.INTERNAL_SERVER_ERROR)
     }
 };
