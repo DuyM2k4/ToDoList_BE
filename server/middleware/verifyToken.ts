@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import jwt, { JwtPayload, TokenExpiredError, JsonWebTokenError } from "jsonwebtoken";
-import { logger } from "../utils/logger";
+import logger from '../utils/logger';
 import { ResponseInf, responseMessage } from "../utils/response";
 
 // Extend Request interface to include userId

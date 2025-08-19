@@ -2,7 +2,7 @@ import { Request, Response } from 'express';
 import User from '../models/User';
 import bcrypt from 'bcrypt';
 import jwt, { Secret } from 'jsonwebtoken';
-import { logger } from '../utils/logger';
+import logger from '../utils/logger';
 import { validateAuthFields } from '../utils/authUtils';
 import { ResponseInf, responseMessage } from "../utils/response";
 
@@ -119,7 +119,7 @@ export const changePassword = async (req: Request, res: Response) => {
     // Check if user exists
     else if (!validateResult.user) {
       logger.warn('Đổi mật khẩu thất bại: Không tìm thấy user');
-      
+
       return ResponseInf.failed(res, 404, responseMessage.AUTH.USER_NOT_FOUND)
     }
 

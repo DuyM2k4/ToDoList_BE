@@ -5,8 +5,8 @@ import cors from "cors";
 import authRoutes from "./routes/auth";
 import todoRoutes from "./routes/todo";
 import { MONGO_URI } from "./constants/db";
-import ngrok from 'ngrok';
-import { logger } from "./utils/logger";
+// import ngrok from 'ngrok';
+import logger from "./utils/logger";
 
 // Load biến môi trường từ file .env
 dotenv.config();
@@ -30,12 +30,12 @@ mongoose
         logger.info("Kết nối MongoDB thành công");
         app.listen(PORT, async () => {
             logger.info(`Server đang chạy tại http://localhost:${PORT}`);
-            try {
-              const url = await ngrok.connect(Number(PORT));
-              logger.info(`Ngrok đang chạy tại: ${url}`);
-            } catch (err) {
-              logger.error('Lỗi khi khởi động Ngrok: ' + err);
-            }
+            // try {
+            //   const url = await ngrok.connect(Number(PORT));
+            //   logger.info(`Ngrok đang chạy tại: ${url}`);
+            // } catch (err) {
+            //   logger.error('Lỗi khi khởi động Ngrok: ' + err);
+            // }
         });
     })
     .catch((err) => {

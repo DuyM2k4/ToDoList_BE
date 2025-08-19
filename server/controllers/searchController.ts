@@ -1,7 +1,7 @@
 import { Request, Response } from "express";
 import { Types } from "mongoose";
 import Todo, { ITodo } from "../models/Todo";
-import { logger } from "../utils/logger";
+import logger from '../utils/logger';
 import { ResponseInf, responseMessage } from "../utils/response";
 import { todo } from "node:test";
 

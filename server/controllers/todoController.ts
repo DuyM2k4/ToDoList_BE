@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import Todo, { ITodo } from "../models/Todo";
-import { logger } from "../utils/logger";
+import logger from '../utils/logger';
 import { ResponseInf, responseMessage } from "../utils/response";
 import { requireAuth } from "../utils/checkAuth";
 import { validateTodoInput } from "../utils/todoValidator";
